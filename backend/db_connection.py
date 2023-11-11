@@ -6,16 +6,16 @@ DATABASE_PATH = "schedule.db"
 """ Create databases."""
 class Database_Querying:
 
-    def __init__(self, filename: str):
+    def __init__(self, filename: str = 'classes.db'):
         """ Initialize an object. Save a cursor to the object."""
         if not self.database_exists(filename):
             self.create_tables(filename)
         self.connection = sqlite3.connect(filename)
 
     @staticmethod
-    def database_exists(filename):
+    def database_exists(filename: str):
         """ Check if file exists. Connect to it if exists, else"""
-        return Path.exists(filename)
+        return Path.exists(Path(filename))
 
 
     @staticmethod
@@ -29,7 +29,7 @@ class Database_Querying:
                     CREATE TABLE courses(
                     courseID INTEGER NOT NULL,
                     courseTitle TEXT NOT NULL,
-                    location TEXT NOT NULL
+                    location TEXT NOT NULL,
                     PRIMARY KEY(courseID)
                     );"""
                     )
@@ -138,7 +138,7 @@ class Database_Querying:
         return len(res) > 0
 
     # Queries to get data from this DB
-    def get_all_for_day(self, day: str) -> Generator[tuple]:
+    def get_all_for_day(self, day: str):
         """ Given a day (Monday, Tuesday, Wednesday, Thursday, Friday), find all classes and times on that day."""
         cur = self.connection.cursor()
         if day == 'Monday':
@@ -184,7 +184,7 @@ class Database_Querying:
             yield res
             res = cur.fetchone()
 
-    def get_all_for_class(self, day: str, cls_name: str) -> Generator[tuple]:
+    def get_all_for_class(self, day: str, cls_name: str):
         """ For a single classroom, get all results."""
         """ Given a day (Monday, Tuesday, Wednesday, Thursday, Friday), find all classes and times on that day."""
         cur = self.connection.cursor()
