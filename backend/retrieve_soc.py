@@ -5,7 +5,7 @@ from db_connection import Database_Querying
 from time import sleep
 from typing import List
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta
 from pprint import pprint
 
 INIT_PATH = "init_files/request.ini"
@@ -25,7 +25,31 @@ class RetrieveSOC:
         self.year = datetime.now().year
 
         # Create database object so that we can add to it
-        self.db = Database_Querying()
+        self.db = Database_Querying(self.config.get('GLOBAL', 'table_file'))
+
+    @staticmethod
+    def process_time(time: str) -> dict:
+        """ Return the time as a start and end as ISO strings.
+        Assumes in the format %h:%m(a/p)-%h:%m(a/p)"""
+        two_times = time.strip().split('-')  # Strip off any leading spaces and split into two times
+
+        start = two_times[0]
+        end, am_pm = two_times[1][:-1], two_times[1][-1]
+
+        # Process end first. Assume a/p at end
+        end_tObj = datetime.strptime(end, "%H%M")
+        if am_pm == 'p':
+            end_tObj += timedelta(hours=12)
+
+        # Process start.
+        if start.endswith('a'):
+            start_tObj = datetime.strptime(start[:-1], "%H%M")
+        else:  # Now, have to check if am_pm == 'p'
+            start_tObj = datetime.strptime(start, "%H%M")
+            if am_pm == 'p':
+                start_tObj += timedelta(hours=12)
+
+        return {'time start': start_tObj.isoformat(), 'time end': end_tObj.isoformat()}
 
     @staticmethod
     def clean_string(s: str) -> List[str]:
@@ -43,6 +67,7 @@ class RetrieveSOC:
                     dept = dept.replace(" ", "%20")
                     response = requests.get(self.url + f"term={self.year}%20{self.term}&department={dept}")
                     self.store_result(response)
+                    sleep(self.time_wait)
 
 
     def store_result(self, json_res: requests.Response) -> None:
@@ -55,11 +80,12 @@ class RetrieveSOC:
                     for l in range(len(res['schools'][i]['departments'][j]['courses'][k]['sections'])):  # Iterate through each section
                         courseID = res['schools'][i]['departments'][j]['courses'][k]['sections'][l]['sectionCode']
                         for m in range(len(res['schools'][i]['departments'][j]['courses'][k]['sections'][l]['meetings'])):  # Iterate through each meeting
-                            days = res['schools'][i]['departments'][j]['courses'][k]['sections'][l]['meetings'][m]['bldg']
+                            place = res['schools'][i]['departments'][j]['courses'][k]['sections'][l]['meetings'][m]['bldg']
+                            days = res['schools'][i]['departments'][j]['courses'][k]['sections'][l]['meetings'][m]['days']
                             time = res['schools'][i]['departments'][j]['courses'][k]['sections'][l]['meetings'][m]['time']
-                            print(courseTitle, courseID, days, time)
-                        raise Exception()
-
+                            time_d = self.process_time(time)
+                            self.db.insert_row(courseID=courseID, courseTitle=courseTitle, location=place,
+                                               days=days, time_start=time_d['time start'], time_end=time_d['time end'])
 
 if __name__ == "__main__":
     r = RetrieveSOC()
