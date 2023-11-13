@@ -25,7 +25,7 @@ class Database_Querying:
                 print(e)
                 exit()
 
-        self.connection = sqlite3.connect(filename)
+        self.filename = filename
 
     @staticmethod
     def database_exists(filename: str):
@@ -125,7 +125,8 @@ class Database_Querying:
         """ This function takes data from the classes and adds it to the database."""
         # First, check if the course is already inside. If it is, no addition to be made.
         if not self.row_already_exists(courseID=courseID):
-            cur = self.connection.cursor()
+            con = sqlite3.connect(self.filename)
+            cur = con.cursor()
             data_tuple = (courseID, courseTitle, location)
             cur.execute("""
                         INSERT INTO Courses
@@ -133,12 +134,20 @@ class Database_Querying:
                         """, data_tuple)
             self._insert_into_tables(courseID=courseID, days=days, time_start=time_start, time_end=time_end)
 
+            # Close
+            cur.close()
+            con.close()
+
 
 
     def _insert_into_tables(self, *, courseID: int, days: str, time_start: str, time_end: str) -> None:
         """ This function takes time data and inserts into any tables."""
         data_tuple = (courseID, time_start, time_end)
-        cur = self.connection.cursor()
+
+        # Get connection
+        con = sqlite3.connect(self.filename)
+        cur = con.cursor()
+
         if 'M' in days:  # Insert into Monday table
             cur.execute("""
                         INSERT INTO Monday
@@ -164,10 +173,18 @@ class Database_Querying:
                         INSERT INTO Monday
                         VALUES (?, ?, ?);""", data_tuple)
 
+        # Close connections
+        con.commit()
+        cur.close()
+        con.close()
+
     # Check if course is already in DB.
     def row_already_exists(self, *, courseID: int) -> bool:
         """ Check if the courseID already exists. """
-        cur = self.connection.cursor()
+        # Get connection
+        con = sqlite3.connect(self.filename)
+        cur = con.cursor()
+
         placeholder = (courseID, )
         cur.execute(f"""
                     SELECT courseID
@@ -175,12 +192,20 @@ class Database_Querying:
                     WHERE courseID = ?
                     );""", placeholder)
         res = cur.fetchall()
+
+        # Close connection
+        cur.close()
+        con.close()
+
         return len(res) > 0
 
     # Queries to get data from this DB
     def get_all_for_day(self, day: str):
         """ Given a day (Monday, Tuesday, Wednesday, Thursday, Friday), find all classes and times on that day."""
-        cur = self.connection.cursor()
+        # Get connection
+        con = sqlite3.connect()
+        cur = con.cursor()
+
         if day == 'Monday':
             cur.execute("""
                         SELECT courseID, location, time_start, time_end
@@ -224,10 +249,15 @@ class Database_Querying:
             yield res
             res = cur.fetchone()
 
+        cur.close()
+        con.close()
+
     def get_all_for_class(self, day: str, cls_name: str):
         """ For a single classroom, get all results."""
         """ Given a day (Monday, Tuesday, Wednesday, Thursday, Friday), find all classes and times on that day."""
-        cur = self.connection.cursor()
+        # Get connection
+        con = sqlite3.connect(self.filename)
+        cur = con.cursor()
         loc = (cls_name, )
         if day == 'Monday':
             cur.execute("""
@@ -277,9 +307,21 @@ class Database_Querying:
             yield res
             res = cur.fetchone()
 
+        # Close database
+        cur.close()
+        con.close()
+
     def clear_database(self) -> None:
         """ DELETES EVERY ROW from table"""
-        cur = self.connection.cursor()
+        # Get connection
+        con = sqlite3.connect(self.filename)
+        cur = con.cursor()
+
         cur.execute("""
                     DELETE FROM Courses;
                     """)
+
+        # Commit and close
+        con.commit()
+        cur.close()
+        con.close()
