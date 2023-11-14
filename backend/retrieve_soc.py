@@ -64,7 +64,6 @@ class RetrieveSOC:
         for char in string.ascii_lowercase:
             depts = self.config.get('DEPARTMENTS', char)
             depts = self.clean_string(depts)
-            print(depts)
             if len(depts):
                 for dept in depts:  # Each department that starts with this letter
                     dept = dept.replace(" ", "%20")
@@ -86,9 +85,14 @@ class RetrieveSOC:
                             place = res['schools'][i]['departments'][j]['courses'][k]['sections'][l]['meetings'][m]['bldg']
                             days = res['schools'][i]['departments'][j]['courses'][k]['sections'][l]['meetings'][m]['days']
                             time = res['schools'][i]['departments'][j]['courses'][k]['sections'][l]['meetings'][m]['time']
-                            time_d = self.process_time(time)
-                            self.db.insert_row(courseID=courseID, courseTitle=courseTitle, location=place,
-                                               days=days, time_start=time_d['time start'], time_end=time_d['time end'])
+                            if time != self.skip_if and place != self.skip_if:
+                                time_d = self.process_time(time)
+                                try:
+                                    self.db.insert_row(courseID=courseID, courseTitle=courseTitle, location=place,
+                                                   days=days, time_start=time_d['time start'], time_end=time_d['time end'])
+                                    print(courseID)
+                                except:
+                                    raise Exception()
 
 if __name__ == "__main__":
     r = RetrieveSOC()

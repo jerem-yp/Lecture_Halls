@@ -19,7 +19,6 @@ class Database_Querying:
         if not self.database_exists(filename):
             try:  # Similarly if an error is raised/interruption, the file isn't even created.
                 self._create_tables(filename)
-                print('db creation ran')
             except Exception as e:
                 os.remove(filename)
                 print(e)
@@ -67,47 +66,42 @@ class Database_Querying:
             # These data structures make it easier to get data for each day
             cur.execute("""
                         CREATE TABLE Monday(
-                        courseID INTEGER NOT NULL,
+                        courseID INTEGER NOT NULL PRIMARY KEY,
                         time_start TEXT NOT NULL,
                         time_end TEXT NOT NULL,
-                        PRIMARY KEY(courseID),
                         FOREIGN KEY (courseID) REFERENCES Courses(courseID) ON DELETE CASCADE
                         );"""
                         )
 
             cur.execute("""
                         CREATE TABLE Tuesday(
-                        courseID INTEGER NOT NULL,
+                        courseID INTEGER NOT NULL PRIMARY KEY,
                         time_start TEXT NOT NULL,
                         time_end TEXT NOT NULL,
-                        PRIMARY KEY(courseID),
                         FOREIGN KEY (courseID) REFERENCES Courses(courseID) ON DELETE CASCADE
                         );""")
 
             cur.execute("""
                         CREATE TABLE Wednesday(
-                        courseID INTEGER NOT NULL,
+                        courseID INTEGER NOT NULL PRIMARY KEY,
                         time_start TEXT NOT NULL,
                         time_end TEXT NOT NULL,
-                        PRIMARY KEY(courseID),
                         FOREIGN KEY (courseID) REFERENCES Courses(courseID) ON DELETE CASCADE
                         );""")
 
             cur.execute("""
                         CREATE TABLE Thursday(
-                        courseID INTEGER NOT NULL,
+                        courseID INTEGER NOT NULL PRIMARY KEY,
                         time_start TEXT NOT NULL,
                         time_end TEXT NOT NULL,
-                        PRIMARY KEY(courseID),
                         FOREIGN KEY (courseID) REFERENCES Courses(courseID) ON DELETE CASCADE
                         );""")
 
             cur.execute("""
                         CREATE TABLE Friday(
-                        courseID INTEGER NOT NULL,
+                        courseID INTEGER NOT NULL PRIMARY KEY,
                         time_start TEXT NOT NULL,
                         time_end TEXT NOT NULL,
-                        PRIMARY KEY(courseID),
                         FOREIGN KEY (courseID) REFERENCES Courses(courseID) ON DELETE CASCADE
                         );""")
         except Exception as e:
@@ -129,46 +123,47 @@ class Database_Querying:
             cur = con.cursor()
             data_tuple = (courseID, courseTitle, location)
             cur.execute("""
-                        INSERT INTO Courses
+                        INSERT INTO Courses (courseID, courseTitle, location)
                         VALUES (?, ?, ?);
                         """, data_tuple)
-
             self._insert_into_tables(cur=cur, courseID=courseID, days=days, time_start=time_start, time_end=time_end)
 
             # Close
             cur.close()
+            con.commit()
             con.close()
+
 
 
 
     def _insert_into_tables(self, *, cur: sqlite3.Cursor, courseID: int, days: str, time_start: str, time_end: str) -> None:
         """ This function takes time data and inserts into any tables."""
-        data_tuple = (courseID, time_start, time_end)
+        data_tuple = {'courseID': courseID, 'time_start': time_start, 'time_end': time_end}
 
         if 'M' in days:  # Insert into Monday table
             cur.execute("""
-                        INSERT INTO Monday
-                        VALUES (?, ?, ?);""", data_tuple)
+                        INSERT INTO Monday (courseID, time_start, time_end)
+                        VALUES (:courseID, :time_start, :time_end);""", data_tuple)
 
         if 'Tu' in days: # Insert into Tuesday table
             cur.execute("""
-                        INSERT INTO Tuesday
-                        VALUES (?, ?, ?);""", data_tuple)
+                        INSERT INTO Tuesday (courseID, time_start, time_end)
+                        VALUES (:courseID, :time_start, :time_end);""", data_tuple)
 
         if 'W' in days:  # Insert into Wednesday table
             cur.execute("""
-                        INSERT INTO Wednesday
-                        VALUES (?, ?, ?);""", data_tuple)
+                        INSERT INTO Wednesday (courseID, time_start, time_end)
+                        VALUES (:courseID, :time_start, :time_end);""", data_tuple)
 
         if 'Th' in days:  # Insert into Thursday table
             cur.execute("""
-                        INSERT INTO Thursday
-                        VALUES (?, ?, ?);""", data_tuple)
+                        INSERT INTO Thursday (courseID, time_start, time_end)
+                        VALUES (:courseID, :time_start, :time_end);""", data_tuple)
 
         if 'F' in days:  # Insert into Friday table
             cur.execute("""
-                        INSERT INTO Monday
-                        VALUES (?, ?, ?);""", data_tuple)
+                        INSERT INTO Friday (courseID, time_start, time_end)
+                        VALUES (:courseID, :time_start, :time_end);""", data_tuple)
 
     # Check if course is already in DB.
     def row_already_exists(self, *, courseID: int) -> bool:
