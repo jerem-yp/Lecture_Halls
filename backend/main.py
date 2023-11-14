@@ -40,12 +40,14 @@ def hello():
 @app.get('/home/{day}')
 def get_day_of_week(day: str):
     """ Get all classes for the day of the week. """
+    day = day.title()
     return [x for x in db.get_all_for_day(day=day)]
 
 @app.get('/home/{day}/{class_name}')
 def get_day_class(day: str, class_name: str):
     """ Get all classes for a location for a day of the week."""
     day = day.title()
+    class_name = class_name.upper()
     return [x for x in db.get_all_for_class(day, class_name)]
 
 

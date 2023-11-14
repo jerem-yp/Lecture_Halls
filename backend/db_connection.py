@@ -191,43 +191,43 @@ class Database_Querying:
     def get_all_for_day(self, day: str):
         """ Given a day (Monday, Tuesday, Wednesday, Thursday, Friday), find all classes and times on that day."""
         # Get connection
-        con = sqlite3.connect()
+        con = sqlite3.connect(self.filename)
         cur = con.cursor()
 
         if day == 'Monday':
             cur.execute("""
-                        SELECT courseID, location, time_start, time_end
+                        SELECT Courses.courseID, location, time_start, time_end
                         FROM Courses
                         INNER JOIN Monday on Monday.courseID = Courses.courseID
-                        );""")
+                        ;""")
 
         elif day == 'Tuesday':
             cur.execute("""
-                        SELECT courseID, location, time_start, time_end
+                        SELECT Courses.courseID, location, time_start, time_end
                         FROM Courses
                         INNER JOIN Tuesday on Tuesday.courseID = Courses.courseID
-                        );""")
+                        ;""")
 
         elif day == 'Wednesday':
             cur.execute("""
-                        SELECT courseID, location, time_start, time_end
+                        SELECT Courses.courseID, location, time_start, time_end
                         FROM Courses
                         INNER JOIN Wednesday on Wednesday.courseID = Courses.courseID
-                        );""")
+                        ;""")
 
         elif day == 'Thursday':
             cur.execute("""
-                        SELECT courseID, location, time_start, time_end
+                        SELECT Courses.courseID, location, time_start, time_end
                         FROM Courses
                         INNER JOIN Thursday on Thursday.courseID = Courses.courseID
-                        );""")
+                        ;""")
 
         elif day == 'Friday':
             cur.execute("""
-                        SELECT courseID, location, time_start, time_end
+                        SELECT Courses.courseID, location, time_start, time_end
                         FROM Courses
                         INNER JOIN Friday on Friday.courseID = Courses.courseID
-                        );""")
+                        ;""")
 
         else:
             raise Exception("Day is invalid.")
