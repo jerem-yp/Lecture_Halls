@@ -132,7 +132,8 @@ class Database_Querying:
                         INSERT INTO Courses
                         VALUES (?, ?, ?);
                         """, data_tuple)
-            self._insert_into_tables(courseID=courseID, days=days, time_start=time_start, time_end=time_end)
+
+            self._insert_into_tables(cur=cur, courseID=courseID, days=days, time_start=time_start, time_end=time_end)
 
             # Close
             cur.close()
@@ -140,13 +141,9 @@ class Database_Querying:
 
 
 
-    def _insert_into_tables(self, *, courseID: int, days: str, time_start: str, time_end: str) -> None:
+    def _insert_into_tables(self, *, cur: sqlite3.Cursor, courseID: int, days: str, time_start: str, time_end: str) -> None:
         """ This function takes time data and inserts into any tables."""
         data_tuple = (courseID, time_start, time_end)
-
-        # Get connection
-        con = sqlite3.connect(self.filename)
-        cur = con.cursor()
 
         if 'M' in days:  # Insert into Monday table
             cur.execute("""
@@ -173,11 +170,6 @@ class Database_Querying:
                         INSERT INTO Monday
                         VALUES (?, ?, ?);""", data_tuple)
 
-        # Close connections
-        con.commit()
-        cur.close()
-        con.close()
-
     # Check if course is already in DB.
     def row_already_exists(self, *, courseID: int) -> bool:
         """ Check if the courseID already exists. """
@@ -190,7 +182,7 @@ class Database_Querying:
                     SELECT courseID
                     FROM Courses
                     WHERE courseID = ?
-                    );""", placeholder)
+                    ;""", placeholder)
         res = cur.fetchall()
 
         # Close connection

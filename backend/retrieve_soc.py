@@ -31,21 +31,24 @@ class RetrieveSOC:
     def process_time(time: str) -> dict:
         """ Return the time as a start and end as ISO strings.
         Assumes in the format %h:%m(a/p)-%h:%m(a/p)"""
-        two_times = time.strip().split('-')  # Strip off any leading spaces and split into two times
+        two_times = time.split('-')  # Strip off any leading spaces and split into two times
+        two_times[0] = two_times[0].strip()
+        two_times[1] = two_times[1].strip()
 
+        # Get the start and end times. Assume a/p at end of end string
         start = two_times[0]
         end, am_pm = two_times[1][:-1], two_times[1][-1]
 
-        # Process end first. Assume a/p at end
-        end_tObj = datetime.strptime(end, "%H%M")
+        # Process end first. Assume a/p at end.
+        end_tObj = datetime.strptime(end, "%H:%M")
         if am_pm == 'p':
             end_tObj += timedelta(hours=12)
 
-        # Process start.
+        # Process start. If an 'a' at the end, we know its the morning. Else, we do not know.
         if start.endswith('a'):
-            start_tObj = datetime.strptime(start[:-1], "%H%M")
+            start_tObj = datetime.strptime(start[:-1], "%H:%M")
         else:  # Now, have to check if am_pm == 'p'
-            start_tObj = datetime.strptime(start, "%H%M")
+            start_tObj = datetime.strptime(start, "%H:%M")
             if am_pm == 'p':
                 start_tObj += timedelta(hours=12)
 
