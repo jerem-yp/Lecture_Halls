@@ -2,13 +2,19 @@ import sqlite3
 from pathlib import Path
 from typing import Generator
 import os
-DATABASE_PATH = "schedule.db"
+from configparser import ConfigParser
+CONFIG_PATH = "init_files/request.ini"
 
 """ Create databases."""
 class Database_Querying:
 
-    def __init__(self, filename: str = 'classes.db'):
+    def __init__(self):
         """ Initialize an object. Save a cursor to the object."""
+        # From the configparser, get the filename
+        config = ConfigParser()
+        config.read(CONFIG_PATH)
+        filename = config.get('GLOBAL', 'table_file')
+
         try: # If there is an error raised, or interruption, the file isn't even created.
             self.turn_on_foreign_keys(filename)
         except Exception as e:
