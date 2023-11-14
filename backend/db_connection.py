@@ -2,19 +2,14 @@ import sqlite3
 from pathlib import Path
 from typing import Generator
 import os
-from configparser import ConfigParser
+
 CONFIG_PATH = "init_files/request.ini"
 
 """ Create databases."""
 class Database_Querying:
 
-    def __init__(self):
+    def __init__(self, filename):
         """ Initialize an object. Save a cursor to the object."""
-        # From the configparser, get the filename
-        config = ConfigParser()
-        config.read(CONFIG_PATH)
-        filename = config.get('GLOBAL', 'table_file')
-
         try: # If there is an error raised, or interruption, the file isn't even created.
             self.turn_on_foreign_keys(filename)
         except Exception as e:
@@ -251,46 +246,46 @@ class Database_Querying:
         # Get connection
         con = sqlite3.connect(self.filename)
         cur = con.cursor()
-        loc = (cls_name, )
+        loc = {'location': cls_name}
         if day == 'Monday':
             cur.execute("""
-                        SELECT courseID, location, time_start, time_end
+                        SELECT Courses.courseID, Courses.location, Monday.time_start, Monday.time_end
                         FROM Courses
                         INNER JOIN Monday on Monday.courseID = Courses.courseID
-                        WHERE Courses.location = ?
-                        );""", loc)
+                        WHERE Courses.location = :location;
+                        """, loc)
 
         elif day == 'Tuesday':
             cur.execute("""
-                        SELECT courseID, location, time_start, time_end
+                        SELECT Courses.courseID, Courses.location, Tuesday.time_start, Tuesday.time_end
                         FROM Courses
-                        INNER JOIN Tuesday ON Tuesday.courseID = Courses.courseID
-                        WHERE Courses.location = ?
-                        );""", loc)
+                        INNER JOIN Tuesday on Tuesday.courseID = Courses.courseID
+                        WHERE Courses.location = :location;
+                        """, loc)
 
         elif day == 'Wednesday':
             cur.execute("""
-                        SELECT courseID, location, time_start, time_end
+                        SELECT Courses.courseID, Courses.location, Wednesday.time_start, Wednesday.time_end
                         FROM Courses
                         INNER JOIN Wednesday on Wednesday.courseID = Courses.courseID
-                        WHERE Courses.location = ?
-                        );""", loc)
+                        WHERE Courses.location = :location;
+                        """, loc)
 
         elif day == 'Thursday':
             cur.execute("""
-                        SELECT courseID, location, time_start, time_end
+                        SELECT Courses.courseID, Courses.location, Thursday.time_start, Thursday.time_end
                         FROM Courses
                         INNER JOIN Thursday on Thursday.courseID = Courses.courseID
-                        WHERE Courses.location = ?
-                        );""", loc)
+                        WHERE Courses.location = :location;
+                        """, loc)
 
         elif day == 'Friday':
             cur.execute("""
-                        SELECT courseID, location, time_start, time_end
+                        SELECT Courses.courseID, Courses.location, Friday.time_start, Friday.time_end
                         FROM Courses
                         INNER JOIN Friday on Friday.courseID = Courses.courseID
-                        WHERE Courses.location = ?
-                        );""", loc)
+                        WHERE Courses.location = :location;
+                        """, loc)
 
         else:
             raise Exception("Day is invalid.")
