@@ -1,0 +1,53 @@
+<!-- There should only be 1 page here, and JS will constantly reload on it -->
+<!DOCTYPE html>
+<html>
+    <head>
+        <title> AntHalls UCI</title>
+        <meta charset="UTF-8">
+        <meta name="author" content="Jeremy Peros">
+        <meta name="description" content="Find open lecture halls around UCI!">
+        <link rel="stylesheet" type="text/css" href="style.css">
+    </head>
+
+    <body>
+        <header>
+            <h1>AntHalls UCI</h1>
+        </header>
+
+        <main>
+            <section class="row">
+                <h2>Open Lecture Halls</h2>
+            </section>
+            <section class="row">
+                <p>Find if a class is open today!</p>
+            </section>
+
+            <!--Dropdown 1: Class-->
+            <article class="row forms">
+                <form>
+                    <section class="dropdown">
+                        <label id="specific-classroom" class="label" for="specific-classroom" required>Class</label>
+                        <select id="specific-classroom" name="class"></select>
+                    </section>
+
+                    <button type="submit">Go!</button>
+                </form>
+
+                <form>
+                    <section class="dropdown">
+                        <label for="specific-building">Building</label>
+                        <select id="specific-building" name="building" required>
+                            <option value=""></option>
+                        </select>
+                    </section>
+
+                    <button type="submit">Go!</button>
+                </form>
+            </article>
+        </main>
+    </body>
+
+    <footer>
+        <p>2023 Jeremy Peros</p>
+    </footer>
+</html>
