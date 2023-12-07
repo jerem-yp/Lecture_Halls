@@ -87,7 +87,7 @@ class RetrieveSOC:
                     if 'message' in response and response['message'] == 'Internal Server Error':
                         print(dept)
                     else:
-                        self.store_result(response, dept)
+                        self.store_result(response)
                         sleep(self.time_wait)
 
 
