@@ -195,7 +195,6 @@ class Database_Querying:
         if connection.is_connected():
             connection.close()
 
-        print(buildings)
         return buildings
 
 
@@ -205,5 +204,5 @@ if __name__ == "__main__":
     #db.get_all_classrooms()
     #db.get_all_buildings()
     #db.get_building('EH', 'Th') \
-    print(db.get_building('EH', 'Th'))
-    print(db.get_single_room('EH', '1200','Th'))
+    # print(db.get_building('EH', 'Th'))
+    # print(db.get_single_room('EH', '1200','Th'))
