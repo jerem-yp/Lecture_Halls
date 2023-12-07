@@ -29,8 +29,16 @@ to the page
   * Backend
     * Python
       * FastAPI
-      * SQLite3
+      * MySQL
 
   * Frontend
-    * React
+    * Vanilla JS
     * HTML/CSS
+   
+  * Other Software
+    * Docker
+
+  #### Installations
+  `pip install fastapi[all]`
+  `pip install mysql-connector-python`
+  `pip install requests`
