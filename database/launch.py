@@ -7,17 +7,19 @@ from datetime import datetime, timedelta
 import mysql.connector
 import sys
 from pprint import pprint
+import getpass
+from pathlib import Path
 
 from typing import List
 
-INIT_PATH = "init/user.ini"
-
+INIT_PATH = Path.cwd() / "init/user.ini" if str(Path.cwd()).endswith('database') else Path.cwd() / "database/init/user.ini"
 class RetrieveSOC:
 
     def __init__(self):
         """ Initialize. Open the INI file."""
         self.config = ConfigParser()
         self.config.read(INIT_PATH)
+        print(INIT_PATH)
 
         # Get api data
         self.time_wait = self.config.getfloat('API', 'wait')
@@ -30,7 +32,7 @@ class RetrieveSOC:
         self.host = self.config.get('LOGIN', 'host')
         self.user = self.config.get('LOGIN', 'user')
         self.database = self.config.get('LOGIN', 'database')
-        self.password = input('Password: ')
+        self.password = getpass.getpass(prompt='Password: ')
 
         # Clear database of data
         self.clear_database()
@@ -94,31 +96,25 @@ class RetrieveSOC:
     def store_result(self, json_res: requests.Response) -> None:
         """ With a result, iterate through it and store data."""
         res = json_res.json()
-        try:
-            for i in range(len(res['schools'])): # Iterate through each school
-                for j in range(len(res['schools'][i]['departments'])): # Iterate through each department
-                    for k in range(len(res['schools'][i]['departments'][j]['courses'])): # Iterate through each course listing
-                        courseTitle = res['schools'][i]['departments'][j]['courses'][k]['courseTitle']
-                        for l in range(len(res['schools'][i]['departments'][j]['courses'][k]['sections'])):  # Iterate through each section
-                            courseID = res['schools'][i]['departments'][j]['courses'][k]['sections'][l]['sectionCode']
-                            for m in range(len(res['schools'][i]['departments'][j]['courses'][k]['sections'][l]['meetings'])):  # Iterate through each meeting
-                                place = res['schools'][i]['departments'][j]['courses'][k]['sections'][l]['meetings'][m]['bldg']
-                                days = res['schools'][i]['departments'][j]['courses'][k]['sections'][l]['meetings'][m]['days']
-                                time = res['schools'][i]['departments'][j]['courses'][k]['sections'][l]['meetings'][m]['time']
-                                if time != self.skip_if and place != self.skip_if:
-                                    time_d = self.process_time(time)
-                                    building, room = self.get_building_room(place)
-                                    try:
-                                        self.insert_row(courseID=courseID, courseTitle=courseTitle, location=building, room=room,
-                                                       days=days, time_start=time_d['time start'], time_end=time_d['time end'])
-                                        print(courseID)
-                                    except:
-                                        pprint(res['schools'][i]['departments'][j]['courses'][k]['sections'][l]['meetings'])
-                                        raise Exception()
-        except KeyError as k:
-            print(k)
-            pprint(res)
-            sys.exit()
+        for i in range(len(res['schools'])): # Iterate through each school
+            for j in range(len(res['schools'][i]['departments'])): # Iterate through each department
+                for k in range(len(res['schools'][i]['departments'][j]['courses'])): # Iterate through each course listing
+                    courseTitle = res['schools'][i]['departments'][j]['courses'][k]['courseTitle']
+                    for l in range(len(res['schools'][i]['departments'][j]['courses'][k]['sections'])):  # Iterate through each section
+                        courseID = res['schools'][i]['departments'][j]['courses'][k]['sections'][l]['sectionCode']
+                        for m in range(len(res['schools'][i]['departments'][j]['courses'][k]['sections'][l]['meetings'])):  # Iterate through each meeting
+                            place = res['schools'][i]['departments'][j]['courses'][k]['sections'][l]['meetings'][m]['bldg']
+                            days = res['schools'][i]['departments'][j]['courses'][k]['sections'][l]['meetings'][m]['days']
+                            time = res['schools'][i]['departments'][j]['courses'][k]['sections'][l]['meetings'][m]['time']
+                            if time != self.skip_if and place != self.skip_if:
+                                time_d = self.process_time(time)
+                                building, room = self.get_building_room(place)
+                                try:
+                                    self.insert_row(courseID=courseID, courseTitle=courseTitle, location=building, room=room,
+                                                   days=days, time_start=time_d['time start'], time_end=time_d['time end'])
+                                except:
+                                    pprint(res['schools'][i]['departments'][j]['courses'][k]['sections'][l]['meetings'])
+                                    raise Exception()
 
 
     def insert_row(self, *, courseID: int, courseTitle: str, location: str, days: str, room:str, time_start: str, time_end: str):
@@ -131,42 +127,45 @@ class RetrieveSOC:
             print("Error while connecting to MySQL: ", err)
             sys.exit()
 
-        cursor = connection.cursor()
+        try:
+            cursor = connection.cursor()
 
-        if not in_courses:
-            # First, write to the 'courses' table
-            insert_query = """INSERT INTO Courses (courseID, courseTitle, location, room) VALUES (%s, %s, %s, %s)"""
-            insert_values = (courseID, courseTitle, location, room)
-            cursor.execute(insert_query, insert_values)
+            if not in_courses:
+                # First, write to the 'courses' table
+                insert_query = """INSERT INTO Courses (courseID, courseTitle, location, room) VALUES (%s, %s, %s, %s)"""
+                insert_values = (courseID, courseTitle, location, room)
+                cursor.execute(insert_query, insert_values)
 
-        if 'M' in days:
-            insert_query = """INSERT INTO Monday (courseID, time_start, time_end) VALUES (%s, %s, %s)"""
-            insert_values = (courseID, time_start, time_end)
-            cursor.execute(insert_query, insert_values)
+            if 'M' in days:
+                insert_query = """INSERT INTO Monday (courseID, time_start, time_end) VALUES (%s, %s, %s)"""
+                insert_values = (courseID, time_start, time_end)
+                cursor.execute(insert_query, insert_values)
 
-        if 'Tu' in days:
-            insert_query = """INSERT INTO Tuesday (courseID, time_start, time_end) VALUES (%s, %s, %s)"""
-            insert_values = (courseID, time_start, time_end)
-            cursor.execute(insert_query, insert_values)
+            if 'Tu' in days:
+                insert_query = """INSERT INTO Tuesday (courseID, time_start, time_end) VALUES (%s, %s, %s)"""
+                insert_values = (courseID, time_start, time_end)
+                cursor.execute(insert_query, insert_values)
 
-        if 'W' in days:
-            insert_query = """INSERT INTO Wednesday (courseID, time_start, time_end) VALUES (%s, %s, %s)"""
-            insert_values = (courseID, time_start, time_end)
-            cursor.execute(insert_query, insert_values)
+            if 'W' in days:
+                insert_query = """INSERT INTO Wednesday (courseID, time_start, time_end) VALUES (%s, %s, %s)"""
+                insert_values = (courseID, time_start, time_end)
+                cursor.execute(insert_query, insert_values)
 
-        if 'Th' in days:
-            insert_query = """INSERT INTO Thursday (courseID, time_start, time_end) VALUES (%s, %s, %s)"""
-            insert_values = (courseID, time_start, time_end)
-            cursor.execute(insert_query, insert_values)
+            if 'Th' in days:
+                insert_query = """INSERT INTO Thursday (courseID, time_start, time_end) VALUES (%s, %s, %s)"""
+                insert_values = (courseID, time_start, time_end)
+                cursor.execute(insert_query, insert_values)
 
-        if 'F' in days:
-            insert_query = """INSERT INTO Friday (courseID, time_start, time_end) VALUES (%s, %s, %s)"""
-            insert_values = (courseID, time_start, time_end)
-            cursor.execute(insert_query, insert_values)
-
-        if connection.is_connected():
-            connection.commit()
-            connection.close()
+            if 'F' in days:
+                insert_query = """INSERT INTO Friday (courseID, time_start, time_end) VALUES (%s, %s, %s)"""
+                insert_values = (courseID, time_start, time_end)
+                cursor.execute(insert_query, insert_values)
+        except Exception as E:
+            raise E
+        finally: # make sure connection is closed
+            if connection.is_connected():
+                connection.commit()
+                connection.close()
 
     def check_course_exists(self, courseID: int) -> bool:
         """ Check if a class is already in the database. Don't store if not."""
