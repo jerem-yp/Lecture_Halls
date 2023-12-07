@@ -1,315 +1,209 @@
-import sqlite3
+import mysql.connector
+import configparser
 from pathlib import Path
-from typing import Generator
-import os
+import sys
 
-CONFIG_PATH = "init_files/request.ini"
+# Get path. Only works if in cwd
+CONFIG_PATH = Path.cwd() / "init/request.ini" if str(Path.cwd()).endswith('backend') else Path.cwd() / "backend/init/request.ini"
 
 """ Create databases."""
 class Database_Querying:
 
-    def __init__(self, filename):
-        """ Initialize an object. Save a cursor to the object."""
-        try: # If there is an error raised, or interruption, the file isn't even created.
-            self.turn_on_foreign_keys(filename)
-        except Exception as e:
-            os.remove(filename)
-            print(e)
-            exit()
+    def __init__(self):
+        config = configparser.ConfigParser()
 
-        if not self.database_exists(filename):
-            try:  # Similarly if an error is raised/interruption, the file isn't even created.
-                self._create_tables(filename)
-            except Exception as e:
-                os.remove(filename)
-                print(e)
-                exit()
+        try:  # If no config error, stop
+            config.read(CONFIG_PATH)
+        except FileNotFoundError:
+            print('INI File does not exist.')
 
-        self.filename = filename
+        self.host = config.get('LOGIN', 'host')
+        self.user = config.get('LOGIN', 'username')
+        self.password = config.get('LOGIN', 'password')
+        self.database = config.get('LOGIN', 'database')
 
-    @staticmethod
-    def database_exists(filename: str):
-        """ Check if Courses table exists. Only """
-        con = sqlite3.connect(filename)
-        cur = con.cursor()
-        cur.execute("SELECT name FROM sqlite_master WHERE type='table';")
-        res = cur.fetchall()
-        return len(res) > 0  # Were any tables found?
-
-    @staticmethod
-    def turn_on_foreign_keys(filename: str):
-        """ Turn on foreign key constraints."""
-        con = sqlite3.connect(filename)
-        con.execute('PRAGMA foreign_keys = ON;')
-        con.commit()
-        con.close()
-
-
-    @staticmethod
-    def _create_tables(filename):
-        """ SQLITE code for creating the tables."""
-        con = sqlite3.connect(filename, isolation_level = None)
-        cur = con.cursor()
-
+    def get_single_room(self, building: str, room: str, day: str):
+        """ Given a building and a room, query the database. """
         try:
+            connection = mysql.connector.connect(host=self.host, user=self.user, password=self.password, database=self.database)
+        except mysql.connector.Error as E:
+            raise Exception('Connection error: ', E)
 
-            # First create table for all places
-            cur.execute("""
-                        CREATE TABLE Courses(
-                        courseID INTEGER NOT NULL,
-                        courseTitle TEXT NOT NULL,
-                        location TEXT NOT NULL,
-                        PRIMARY KEY(courseID)
-                        );"""
-                        )
+        cursor = connection.cursor()
 
-            # Now create table for each day of the week, M-F
-            # These data structures make it easier to get data for each day
-            cur.execute("""
-                        CREATE TABLE Monday(
-                        courseID INTEGER NOT NULL PRIMARY KEY,
-                        time_start TEXT NOT NULL,
-                        time_end TEXT NOT NULL,
-                        FOREIGN KEY (courseID) REFERENCES Courses(courseID) ON DELETE CASCADE
-                        );"""
-                        )
+        if day == 'M':
+            query = """
+                    SELECT c.courseTitle, day.time_start, day.time_end
+                    FROM (SELECT *
+                          FROM Courses AS C
+                          WHERE C.location = %s AND C.room = %s) AS c                       
+                    INNER JOIN Monday AS day ON c.courseID = day.courseID;"""
+            data = (building, room)
+            cursor.execute(query, data)
 
-            cur.execute("""
-                        CREATE TABLE Tuesday(
-                        courseID INTEGER NOT NULL PRIMARY KEY,
-                        time_start TEXT NOT NULL,
-                        time_end TEXT NOT NULL,
-                        FOREIGN KEY (courseID) REFERENCES Courses(courseID) ON DELETE CASCADE
-                        );""")
+        elif day == 'Tu':
+            query = """
+                    SELECT c.courseTitle, day.time_start, day.time_end
+                    FROM (SELECT *
+                          FROM Courses AS C
+                          WHERE C.location = %s AND C.room = %s) AS c                       
+                    INNER JOIN Tuesday AS day ON c.courseID = day.courseID;"""
+            data = (building, room)
+            cursor.execute(query, data)
 
-            cur.execute("""
-                        CREATE TABLE Wednesday(
-                        courseID INTEGER NOT NULL PRIMARY KEY,
-                        time_start TEXT NOT NULL,
-                        time_end TEXT NOT NULL,
-                        FOREIGN KEY (courseID) REFERENCES Courses(courseID) ON DELETE CASCADE
-                        );""")
+        elif day == 'W':
+            query = """
+                    SELECT c.courseTitle, day.time_start, day.time_end
+                    FROM (SELECT *
+                          FROM Courses AS C
+                          WHERE C.location = %s AND C.room = %s) AS c                       
+                    INNER JOIN Wednesday AS day ON c.courseID = day.courseID;"""
+            data = (building, room)
+            cursor.execute(query, data)
 
-            cur.execute("""
-                        CREATE TABLE Thursday(
-                        courseID INTEGER NOT NULL PRIMARY KEY,
-                        time_start TEXT NOT NULL,
-                        time_end TEXT NOT NULL,
-                        FOREIGN KEY (courseID) REFERENCES Courses(courseID) ON DELETE CASCADE
-                        );""")
+        elif day == 'Th':
+            query = """
+                    SELECT c.courseTitle, day.time_start, day.time_end
+                    FROM (SELECT *
+                          FROM Courses AS C
+                          WHERE C.location = %s AND C.room = %s) AS c                       
+                    INNER JOIN Thursday AS day ON c.courseID = day.courseID;"""
+            data = (building, room)
+            cursor.execute(query, data)
 
-            cur.execute("""
-                        CREATE TABLE Friday(
-                        courseID INTEGER NOT NULL PRIMARY KEY,
-                        time_start TEXT NOT NULL,
-                        time_end TEXT NOT NULL,
-                        FOREIGN KEY (courseID) REFERENCES Courses(courseID) ON DELETE CASCADE
-                        );""")
-        except Exception as e:
-            cur.close()
-            con.close()
-            print(e)
-            exit()
+        elif day == 'F':
 
-        con.commit()
-        cur.close()
-        con.close()
-
-    # Add rows
-    def insert_row(self, *, courseID: int, courseTitle: str, location: str, days: str, time_start: str, time_end: str) -> None:
-        """ This function takes data from the classes and adds it to the database."""
-        # First, check if the course is already inside. If it is, no addition to be made.
-        if not self.row_already_exists(courseID=courseID):
-            con = sqlite3.connect(self.filename)
-            cur = con.cursor()
-            data_tuple = (courseID, courseTitle, location)
-            cur.execute("""
-                        INSERT INTO Courses (courseID, courseTitle, location)
-                        VALUES (?, ?, ?);
-                        """, data_tuple)
-            self._insert_into_tables(cur=cur, courseID=courseID, days=days, time_start=time_start, time_end=time_end)
-
-            # Close
-            cur.close()
-            con.commit()
-            con.close()
-
-
-
-
-    def _insert_into_tables(self, *, cur: sqlite3.Cursor, courseID: int, days: str, time_start: str, time_end: str) -> None:
-        """ This function takes time data and inserts into any tables."""
-        data_tuple = {'courseID': courseID, 'time_start': time_start, 'time_end': time_end}
-
-        if 'M' in days:  # Insert into Monday table
-            cur.execute("""
-                        INSERT INTO Monday (courseID, time_start, time_end)
-                        VALUES (:courseID, :time_start, :time_end);""", data_tuple)
-
-        if 'Tu' in days: # Insert into Tuesday table
-            cur.execute("""
-                        INSERT INTO Tuesday (courseID, time_start, time_end)
-                        VALUES (:courseID, :time_start, :time_end);""", data_tuple)
-
-        if 'W' in days:  # Insert into Wednesday table
-            cur.execute("""
-                        INSERT INTO Wednesday (courseID, time_start, time_end)
-                        VALUES (:courseID, :time_start, :time_end);""", data_tuple)
-
-        if 'Th' in days:  # Insert into Thursday table
-            cur.execute("""
-                        INSERT INTO Thursday (courseID, time_start, time_end)
-                        VALUES (:courseID, :time_start, :time_end);""", data_tuple)
-
-        if 'F' in days:  # Insert into Friday table
-            cur.execute("""
-                        INSERT INTO Friday (courseID, time_start, time_end)
-                        VALUES (:courseID, :time_start, :time_end);""", data_tuple)
-
-    # Check if course is already in DB.
-    def row_already_exists(self, *, courseID: int) -> bool:
-        """ Check if the courseID already exists. """
-        # Get connection
-        con = sqlite3.connect(self.filename)
-        cur = con.cursor()
-
-        placeholder = (courseID, )
-        cur.execute(f"""
-                    SELECT courseID
-                    FROM Courses
-                    WHERE courseID = ?
-                    ;""", placeholder)
-        res = cur.fetchall()
-
-        # Close connection
-        cur.close()
-        con.close()
-
-        return len(res) > 0
-
-    # Queries to get data from this DB
-    def get_all_for_day(self, day: str):
-        """ Given a day (Monday, Tuesday, Wednesday, Thursday, Friday), find all classes and times on that day."""
-        # Get connection
-        con = sqlite3.connect(self.filename)
-        cur = con.cursor()
-
-        if day == 'Monday':
-            cur.execute("""
-                        SELECT Courses.courseID, location, time_start, time_end
-                        FROM Courses
-                        INNER JOIN Monday on Monday.courseID = Courses.courseID
-                        ;""")
-
-        elif day == 'Tuesday':
-            cur.execute("""
-                        SELECT Courses.courseID, location, time_start, time_end
-                        FROM Courses
-                        INNER JOIN Tuesday on Tuesday.courseID = Courses.courseID
-                        ;""")
-
-        elif day == 'Wednesday':
-            cur.execute("""
-                        SELECT Courses.courseID, location, time_start, time_end
-                        FROM Courses
-                        INNER JOIN Wednesday on Wednesday.courseID = Courses.courseID
-                        ;""")
-
-        elif day == 'Thursday':
-            cur.execute("""
-                        SELECT Courses.courseID, location, time_start, time_end
-                        FROM Courses
-                        INNER JOIN Thursday on Thursday.courseID = Courses.courseID
-                        ;""")
-
-        elif day == 'Friday':
-            cur.execute("""
-                        SELECT Courses.courseID, location, time_start, time_end
-                        FROM Courses
-                        INNER JOIN Friday on Friday.courseID = Courses.courseID
-                        ;""")
+            query = """
+                    SELECT c.courseTitle, day.time_start, day.time_end
+                    FROM (SELECT *
+                          FROM Courses AS C
+                          WHERE C.location = %s AND C.room = %s) AS c                       
+                    INNER JOIN Friday AS day ON c.courseID = day.courseID;"""
+            data = (building, room)
+            cursor.execute(query, data)
 
         else:
-            raise Exception("Day is invalid.")
+            raise Exception('Day does not exist.')
 
-        res = cur.fetchone()
-        while res:
-            yield res
-            res = cur.fetchone()
+        courses = cursor.fetchall()
 
-        cur.close()
-        con.close()
+        if connection.is_connected():
+            connection.close()
 
-    def get_all_for_class(self, day: str, cls_name: str):
-        """ For a single classroom, get all results."""
-        """ Given a day (Monday, Tuesday, Wednesday, Thursday, Friday), find all classes and times on that day."""
-        # Get connection
-        con = sqlite3.connect(self.filename)
-        cur = con.cursor()
-        loc = {'location': cls_name}
-        if day == 'Monday':
-            cur.execute("""
-                        SELECT Courses.courseID, Courses.location, Monday.time_start, Monday.time_end
-                        FROM Courses
-                        INNER JOIN Monday on Monday.courseID = Courses.courseID
-                        WHERE Courses.location = :location;
-                        """, loc)
+        return courses
 
-        elif day == 'Tuesday':
-            cur.execute("""
-                        SELECT Courses.courseID, Courses.location, Tuesday.time_start, Tuesday.time_end
-                        FROM Courses
-                        INNER JOIN Tuesday on Tuesday.courseID = Courses.courseID
-                        WHERE Courses.location = :location;
-                        """, loc)
 
-        elif day == 'Wednesday':
-            cur.execute("""
-                        SELECT Courses.courseID, Courses.location, Wednesday.time_start, Wednesday.time_end
-                        FROM Courses
-                        INNER JOIN Wednesday on Wednesday.courseID = Courses.courseID
-                        WHERE Courses.location = :location;
-                        """, loc)
+    def get_building(self, building: str, day: str):
+        """ Given a building, query the database.  And get all classes in that building. """
+        try:
+            connection = mysql.connector.connect(host=self.host, user=self.user, password=self.password, database=self.database)
+        except mysql.connector.Error as E:
+            raise Exception('Connection error: ', E)
 
-        elif day == 'Thursday':
-            cur.execute("""
-                        SELECT Courses.courseID, Courses.location, Thursday.time_start, Thursday.time_end
-                        FROM Courses
-                        INNER JOIN Thursday on Thursday.courseID = Courses.courseID
-                        WHERE Courses.location = :location;
-                        """, loc)
+        cursor = connection.cursor()
 
-        elif day == 'Friday':
-            cur.execute("""
-                        SELECT Courses.courseID, Courses.location, Friday.time_start, Friday.time_end
-                        FROM Courses
-                        INNER JOIN Friday on Friday.courseID = Courses.courseID
-                        WHERE Courses.location = :location;
-                        """, loc)
+        if day == 'M':
+            query = """
+                    SELECT c.courseTitle, day.time_start, day.time_end
+                    FROM (SELECT *
+                          FROM Courses AS C
+                          WHERE C.location = %s) AS c                       
+                    INNER JOIN Monday AS day ON c.courseID = day.courseID;"""
+            data = (building,)
+            cursor.execute(query, data)
+
+        elif day == 'Tu':
+            query = """
+                    SELECT c.courseTitle, day.time_start, day.time_end
+                    FROM (SELECT *
+                          FROM Courses AS C
+                          WHERE C.location = %s) AS c                       
+                    INNER JOIN Tuesday AS day ON c.courseID = day.courseID;"""
+            data = (building,)
+            cursor.execute(query, data)
+
+        elif day == 'W':
+            query = """
+                    SELECT c.courseTitle, day.time_start, day.time_end
+                    FROM (SELECT *
+                          FROM Courses AS C
+                          WHERE C.location = %s) AS c                       
+                    INNER JOIN Wednesday AS day ON c.courseID = day.courseID;"""
+            data = (building,)
+            cursor.execute(query, data)
+
+        elif day == 'Th':
+            query = """
+                    SELECT c.courseTitle, day.time_start, day.time_end
+                    FROM (SELECT *
+                          FROM Courses AS C
+                          WHERE C.location = %s) AS c                       
+                    INNER JOIN Thursday AS day ON c.courseID = day.courseID;"""
+            data = (building,)
+            cursor.execute(query, data)
+
+        elif day == 'F':
+
+            query = """
+                    SELECT c.courseTitle, day.time_start, day.time_end
+                    FROM (SELECT *
+                          FROM Courses AS C
+                          WHERE C.location = %s) AS c                       
+                    INNER JOIN Friday AS day ON c.courseID = day.courseID;"""
+            data = (building,)
+            cursor.execute(query, data)
 
         else:
-            raise Exception("Day is invalid.")
+            raise Exception('Day does not exist.')
 
-        res = cur.fetchone()
-        while res:
-            yield res
-            res = cur.fetchone()
+        courses = cursor.fetchall()
 
-        # Close database
-        cur.close()
-        con.close()
+        if connection.is_connected():
+            connection.close()
 
-    def clear_database(self) -> None:
-        """ DELETES EVERY ROW from table"""
-        # Get connection
-        con = sqlite3.connect(self.filename)
-        cur = con.cursor()
+        return courses
 
-        cur.execute("""
-                    DELETE FROM Courses;
-                    """)
+    def get_all_classrooms(self):
+        """ Get all classrooms where classes are taking place on campus."""
+        try:
+            connection = mysql.connector.connect(host=self.host, user=self.user, password=self.password, database=self.database)
+        except mysql.connector.Error as E:
+            raise Exception('Connection error: ', E)
 
-        # Commit and close
-        con.commit()
-        cur.close()
-        con.close()
+        cursor = connection.cursor()
+        query = """SELECT DISTINCT location, room FROM Courses"""
+        cursor.execute(query)
+        rooms = cursor.fetchall()
+
+        if connection.is_connected():
+            connection.close()
+
+        return rooms
+
+    def get_all_buildings(self):
+        """ Get all the buildings in the school where classes are taking place."""
+        try:
+            connection = mysql.connector.connect(host=self.host, user=self.user, password=self.password, database=self.database)
+        except mysql.connector.Error as E:
+            raise Exception('Connection error: ', E)
+
+        cursor = connection.cursor()
+        query = """SELECT DISTINCT location FROM Courses"""
+        cursor.execute(query)
+        buildings = cursor.fetchall()
+
+        if connection.is_connected():
+            connection.close()
+
+        print(buildings)
+        return buildings
+
+
+if __name__ == "__main__":
+    db = Database_Querying()
+    #db.get_single_room('EH', '1200', 'Th')
+    #db.get_all_classrooms()
+    #db.get_all_buildings()
+    #db.get_building('EH', 'Th') \
+    print(db.get_building('EH', 'Th'))
+    print(db.get_single_room('EH', '1200','Th'))
