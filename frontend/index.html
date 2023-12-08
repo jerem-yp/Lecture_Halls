@@ -7,6 +7,7 @@
         <meta name="author" content="Jeremy Peros">
         <meta name="description" content="Find open lecture halls around UCI!">
         <link rel="stylesheet" type="text/css" href="style.css">
+        <script src="script.js"></script>
     </head>
 
     <body>
@@ -27,7 +28,7 @@
                 <form>
                     <section class="dropdown">
                         <label id="classroom-label" class="label" for="specific-classroom">Class</label>
-                        <select id="specific-classroom" name="class" required></select>
+                        <select id="specific-classroom" name="class" onchange="populateClassroom()" required></select>
                     </section>
 
                     <button type="submit">Go!</button>
@@ -37,7 +38,7 @@
                     <section class="dropdown">
                         <label for="specific-building">Building</label>
                         <select id="specific-building" name="building" required>
-                            <option value=""></option>
+                            <option value="">Loading...</option>
                         </select>
                     </section>
 
