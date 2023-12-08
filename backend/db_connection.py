@@ -4,7 +4,7 @@ from pathlib import Path
 import sys
 
 # Get path. Only works if in cwd
-CONFIG_PATH = Path.cwd() / "init/request.ini" if str(Path.cwd()).endswith('backend') else Path.cwd() / "backend/init/request.ini"
+CONFIG_PATH = "init/user.ini"
 
 """ Create databases."""
 class Database_Querying:
