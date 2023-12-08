@@ -36,12 +36,12 @@ async def get_room(day: str, building: str, room: str):
     else:
         return Database_Querying().get_single_room(building=building, room=room, day=day)
 
-@app.get('/all_classrooms')
+@app.get('/all-classrooms')
 async def all_classrooms():
     """ Return all classrooms. """
     return Database_Querying().get_all_classrooms()
 
-@app.get('/all_buildings')
+@app.get('/all-buildings')
 async def all_buildings():
     """ Return all buildings. """
     return Database_Querying().get_all_buildings()

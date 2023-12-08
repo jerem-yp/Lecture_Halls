@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Dancing+Script&display=swap');
+
 body {
     font-family: helvetica;
     margin: 0;
@@ -13,6 +15,7 @@ header {
     border-bottom-left-radius: .3rem;
     border-bottom-right-radius: .3rem;
     height: 10vh;
+    font-family: 'Dancing Script', cursive;
 }
 
 main {
