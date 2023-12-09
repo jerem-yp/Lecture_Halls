@@ -4,7 +4,7 @@ from pathlib import Path
 import sys
 
 # Get path. Only works if in cwd
-CONFIG_PATH = "init/user.ini"
+CONFIG_PATH = "init/request.ini"
 
 """ Create databases."""
 class Database_Querying:

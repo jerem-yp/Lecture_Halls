@@ -12,7 +12,7 @@ from pathlib import Path
 
 from typing import List
 
-INIT_PATH = Path.cwd() / "init/user.ini" if str(Path.cwd()).endswith('database') else Path.cwd() / "database/init/user.ini"
+INIT_PATH = "init/user.ini"
 class RetrieveSOC:
 
     def __init__(self):
