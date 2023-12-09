@@ -1,6 +1,9 @@
 # Use the official MySQL image as the base image
 FROM mysql:latest
 
+# Copy custom MYSQL config file
+COPY my.cnf /etc/mysql/my.cnf
+
 # Copy custom MySQL configurations or initialization scripts if needed
 COPY init.sql /docker-entrypoint-initdb.d/
 
