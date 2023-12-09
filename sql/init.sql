@@ -58,5 +58,3 @@ CREATE VIEW LectureHalls.all_buildings
 AS
     (SELECT DISTINCT location
     FROM LectureHalls.Courses);
-
-SELECT host,user from mysql.user
