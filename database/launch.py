@@ -19,7 +19,6 @@ class RetrieveSOC:
         """ Initialize. Open the INI file."""
         self.config = ConfigParser()
         self.config.read(INIT_PATH)
-        print(INIT_PATH)
 
         # Get api data
         self.time_wait = self.config.getfloat('API', 'wait')
