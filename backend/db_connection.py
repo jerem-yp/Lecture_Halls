@@ -21,11 +21,12 @@ class Database_Querying:
         self.user = config.get('LOGIN', 'username')
         self.password = config.get('LOGIN', 'password')
         self.database = config.get('LOGIN', 'database')
+        self.port = config.getint('LOGIN', 'port')
 
     def get_single_room(self, building: str, room: str, day: str):
         """ Given a building and a room, query the database. """
         try:
-            connection = mysql.connector.connect(host=self.host, user=self.user, password=self.password, database=self.database)
+            connection = mysql.connector.connect(host=self.host, user=self.user, password=self.password, database=self.database, port=self.port)
         except mysql.connector.Error as E:
             raise Exception('Connection error: ', E)
 
@@ -96,7 +97,7 @@ class Database_Querying:
     def get_building(self, building: str, day: str):
         """ Given a building, query the database.  And get all classes in that building. """
         try:
-            connection = mysql.connector.connect(host=self.host, user=self.user, password=self.password, database=self.database)
+            connection = mysql.connector.connect(host=self.host, user=self.user, password=self.password, database=self.database, port=self.port)
         except mysql.connector.Error as E:
             raise Exception('Connection error: ', E)
 
@@ -166,7 +167,7 @@ class Database_Querying:
     def get_all_classrooms(self):
         """ Get all classrooms where classes are taking place on campus."""
         try:
-            connection = mysql.connector.connect(host=self.host, user=self.user, password=self.password, database=self.database)
+            connection = mysql.connector.connect(host=self.host, user=self.user, password=self.password, database=self.database, port=self.port)
         except mysql.connector.Error as E:
             raise Exception('Connection error: ', E)
 
@@ -183,7 +184,7 @@ class Database_Querying:
     def get_all_buildings(self):
         """ Get all the buildings in the school where classes are taking place."""
         try:
-            connection = mysql.connector.connect(host=self.host, user=self.user, password=self.password, database=self.database)
+            connection = mysql.connector.connect(host=self.host, user=self.user, password=self.password, database=self.database, port=self.port)
         except mysql.connector.Error as E:
             raise Exception('Connection error: ', E)
 

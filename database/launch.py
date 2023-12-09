@@ -32,6 +32,7 @@ class RetrieveSOC:
         self.host = self.config.get('LOGIN', 'host')
         self.user = self.config.get('LOGIN', 'user')
         self.database = self.config.get('LOGIN', 'database')
+        self.port = self.config.get('LOGIN', 'port')
         self.password = getpass.getpass(prompt='Password: ')
 
         # Clear database of data
@@ -122,7 +123,7 @@ class RetrieveSOC:
         in_courses = self.check_course_exists(courseID)
 
         try:
-            connection = mysql.connector.connect(host=self.host, user=self.user, password=self.password, database=self.database)
+            connection = mysql.connector.connect(host=self.host, user=self.user, password=self.password, database=self.database, port=self.port)
         except mysql.connector.Error as err:  # STOP the code
             print("Error while connecting to MySQL: ", err)
             sys.exit()
@@ -170,7 +171,7 @@ class RetrieveSOC:
     def check_course_exists(self, courseID: int) -> bool:
         """ Check if a class is already in the database. Don't store if not."""
         try:
-            connection = mysql.connector.connect(host=self.host, user=self.user, password=self.password, database=self.database)
+            connection = mysql.connector.connect(host=self.host, user=self.user, password=self.password, database=self.database, port=self.port)
         except mysql.connector.Error as err:  # STOP the code
             print("Error while connecting to MySQL: ", err)
             sys.exit()
@@ -190,7 +191,7 @@ class RetrieveSOC:
         """ Clear all tables. There is a 'DELETE CASCADE', which is all that needs to be deleted is the
         Courses table."""
         try:
-            connection = mysql.connector.connect(host=self.host, user=self.user, password=self.password, database=self.database)
+            connection = mysql.connector.connect(host=self.host, user=self.user, password=self.password, database=self.database, port=self.port)
         except mysql.connector.Error as err:  # STOP the code
             print("Error while connecting to MySQL: ", err)
             sys.exit()
